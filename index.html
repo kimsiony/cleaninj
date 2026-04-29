@@ -3,219 +3,235 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>은현이네 세탁소</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600&display=swap" rel="stylesheet">
+<title>세탁소 앱</title>
 
 <style>
-body {
-  margin: 0;
-  font-family: 'Pretendard', sans-serif;
-  background: #f5f6f8;
-}
+body { margin:0; font-family:sans-serif; background:#f5f6f8; }
+.header { background:#2563eb; color:white; padding:15px; text-align:center; }
 
-/* 상단 */
-.header {
-  background: linear-gradient(135deg, #1d4ed8, #2563eb);
-  color: white;
-  padding: 30px 20px;
-  text-align: center;
-  border-bottom-left-radius: 30px;
-  border-bottom-right-radius: 30px;
-}
+.container { padding:15px; }
 
-.header h1 {
-  margin: 0;
-  font-size: 24px;
-}
+.character { text-align:center; font-size:50px; }
 
-.header p {
-  margin: 5px 0 0;
-  opacity: 0.9;
-}
+input { width:100%; padding:10px; margin-top:8px; border-radius:8px; border:1px solid #ccc; }
 
-/* 홈 버튼 */
-.menu {
-  padding: 20px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-}
+button { margin-top:8px; padding:10px; border:none; border-radius:8px; background:#2563eb; color:white; }
 
-.card {
-  padding: 20px;
-  border-radius: 16px;
-  color: white;
-  font-weight: bold;
-  text-align: center;
-  cursor: pointer;
-}
+.category button { margin-right:5px; }
 
-.blue { background: linear-gradient(135deg, #3b82f6, #2563eb); }
-.green { background: linear-gradient(135deg, #10b981, #059669); }
+.item { background:white; padding:10px; border-radius:10px; margin-top:8px; }
 
-/* 화면 */
-.screen {
-  display: none;
-  padding: 16px;
-}
-
-/* 입력폼 */
-input {
-  width: 100%;
-  padding: 12px;
-  border-radius: 10px;
-  border: 1px solid #ddd;
-  margin-bottom: 10px;
-}
-
-/* 버튼 */
-.btn {
-  width: 100%;
-  padding: 14px;
-  border: none;
-  border-radius: 12px;
-  background: #2563eb;
-  color: white;
-  font-size: 16px;
-}
-
-/* 리스트 */
-.item {
-  background: white;
-  border-radius: 12px;
-  padding: 14px;
-  margin-bottom: 10px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-}
-
-.price {
-  float: right;
-  color: #2563eb;
-  font-weight: bold;
-}
-
-.small {
-  color: #666;
-  font-size: 13px;
-}
-
-/* 하단 네비 */
-.nav {
-  position: fixed;
-  bottom: 0;
-  width: 100%;
-  background: white;
-  display: flex;
-  justify-content: space-around;
-  padding: 10px 0;
-  border-top: 1px solid #eee;
-}
-
-.nav div {
-  font-size: 12px;
-  text-align: center;
-  color: #666;
-}
-
-.nav div.active {
-  color: #2563eb;
-  font-weight: bold;
-}
+h3,h4 { margin-top:20px; }
 </style>
 </head>
 
 <body>
 
-<!-- 홈 -->
-<div id="home">
-  <div class="header">
-    <h1>은현이네 세탁소</h1>
-    <p>30년 전통, 믿고 맡겨주세요</p>
-  </div>
-
-  <div class="menu">
-    <div class="card blue" onclick="go('register')">고객 접수</div>
-    <div class="card green" onclick="go('list')">세탁 진행중</div>
-    <div class="card blue">완료 고객</div>
-    <div class="card green">매출 보기</div>
-  </div>
+<div class="header">
+  <h2>은현이네 세탁소</h2>
 </div>
 
-<!-- 고객 등록 -->
-<div id="register" class="screen">
+<div class="container">
+
+  <!-- 접수 -->
   <h3>고객 접수</h3>
+  <div class="character">🧑‍🔧</div>
+
   <input id="name" placeholder="이름">
-  <input id="phone" placeholder="전화번호">
+  <input id="phone" placeholder="전화번호" oninput="findCustomer()">
+
+  <h4>📜 이전 기록</h4>
+  <div id="history"></div>
+
+  <div class="category">
+    <button onclick="selectCategory('상의')">상의</button>
+    <button onclick="selectCategory('하의')">하의</button>
+    <button onclick="selectCategory('신발')">신발</button>
+    <button onclick="selectCategory('모자')">모자</button>
+  </div>
+
+  <div id="options"></div>
+
+  <input id="custom" placeholder="직접 입력">
+
+  <h4>선택된 항목</h4>
+  <div id="selected"></div>
+
   <input id="price" placeholder="가격">
-  <button class="btn" onclick="add()">접수하기</button>
-</div>
 
-<!-- 리스트 -->
-<div id="list" class="screen">
-  <h3>세탁 진행중</h3>
-  <div id="items"></div>
-</div>
+  <button onclick="save()">접수하기</button>
 
-<!-- 하단 네비 -->
-<div class="nav">
-  <div class="active" onclick="go('home')">홈</div>
-  <div onclick="go('list')">고객</div>
-  <div>알림</div>
-  <div>설정</div>
+  <!-- 리스트 -->
+  <h3>📦 진행중</h3>
+  <div id="progress"></div>
+
+  <h3>✅ 완료 고객</h3>
+  <div id="done"></div>
+
 </div>
 
 <script>
 let data = JSON.parse(localStorage.getItem("data") || "[]");
+let selectedItems = [];
+let currentCategory = "";
 
-function go(screen) {
-  document.getElementById("home").style.display = "none";
-  document.getElementById("register").style.display = "none";
-  document.getElementById("list").style.display = "none";
+const dataMap = {
+  "상의":["셔츠","티셔츠","니트"],
+  "하의":["청바지","슬랙스"],
+  "신발":["운동화","구두"],
+  "모자":["캡","비니"]
+};
 
-  if(screen === "home") document.getElementById("home").style.display = "block";
-  if(screen === "register") document.getElementById("register").style.display = "block";
-  if(screen === "list") {
-    render();
-    document.getElementById("list").style.display = "block";
-  }
+function getToday() {
+  return new Date().toISOString().split("T")[0];
 }
 
-function add() {
-  const name = document.getElementById("name").value;
-  const phone = document.getElementById("phone").value;
-  const price = document.getElementById("price").value;
+/* 카테고리 */
+function selectCategory(cat){
+  currentCategory = cat;
+  const list = dataMap[cat];
 
-  data.push({ name, phone, price, done:false });
-  localStorage.setItem("data", JSON.stringify(data));
+  let html = "<h4>"+cat+"</h4>";
+  list.forEach(item=>{
+    html += `<div class="item">${item} <button onclick="addItem('${item}')">+</button></div>`;
+  });
 
-  alert("접수 완료");
-  go("home");
+  document.getElementById("options").innerHTML = html;
 }
 
-function render() {
-  const el = document.getElementById("items");
+function addItem(item){
+  selectedItems.push(item);
+  renderSelected();
+}
+
+function renderSelected(){
+  const el = document.getElementById("selected");
   el.innerHTML = "";
 
-  data.forEach((d,i)=>{
-    el.innerHTML += `
-      <div class="item">
-        <strong>${d.name}</strong>
-        <span class="price">${d.price}원</span><br>
-        <div class="small">${d.phone}</div>
-        <button onclick="toggle(${i})">완료 처리</button>
-      </div>
-    `;
+  selectedItems.forEach((i,index)=>{
+    el.innerHTML += `<div class="item">${i} <button onclick="removeItem(${index})">❌</button></div>`;
   });
 }
 
-function toggle(i){
-  data[i].done = !data[i].done;
+function removeItem(i){
+  selectedItems.splice(i,1);
+  renderSelected();
+}
+
+/* 고객 찾기 */
+function findCustomer(){
+  const phone = document.getElementById("phone").value;
+
+  const historyEl = document.getElementById("history");
+  historyEl.innerHTML = "";
+
+  const list = data.filter(d=>d.phone === phone);
+
+  if(list.length>0){
+    document.getElementById("name").value = list[0].name;
+
+    list.slice().reverse().forEach(d=>{
+      historyEl.innerHTML += `
+        <div class="item">
+          📅 ${d.date}<br>
+          👕 ${d.items.join(", ")}<br>
+          💰 ${d.price}원
+        </div>
+      `;
+    });
+  }
+}
+
+/* 저장 */
+function save(){
+  const name = document.getElementById("name").value;
+  const phone = document.getElementById("phone").value;
+  const price = document.getElementById("price").value;
+  const custom = document.getElementById("custom").value;
+
+  if(custom) selectedItems.push(custom);
+
+  data.push({
+    name,
+    phone,
+    items:[...selectedItems],
+    price,
+    done:false,
+    date:getToday()
+  });
+
+  localStorage.setItem("data", JSON.stringify(data));
+
+  alert("접수 완료!");
+  location.reload();
+}
+
+/* 문자 */
+function sendSMS(phone){
+  const msg = "세탁이 완료되었습니다.\n한국사 세탁소\nT.02-2684-4003";
+  location.href = `sms:${phone}?body=${encodeURIComponent(msg)}`;
+}
+
+/* 완료 */
+function complete(i){
+  data[i].done = true;
+  localStorage.setItem("data", JSON.stringify(data));
+  sendSMS(data[i].phone);
+  render();
+}
+
+/* 수정 */
+function edit(i){
+  const d = data[i];
+
+  const name = prompt("이름", d.name);
+  const price = prompt("가격", d.price);
+
+  if(name) d.name = name;
+  if(price) d.price = price;
+
   localStorage.setItem("data", JSON.stringify(data));
   render();
 }
 
-go("home");
+/* 삭제 */
+function removeData(i){
+  if(confirm("삭제할까요?")){
+    data.splice(i,1);
+    localStorage.setItem("data", JSON.stringify(data));
+    render();
+  }
+}
+
+/* 렌더 */
+function render(){
+  const progressEl = document.getElementById("progress");
+  const doneEl = document.getElementById("done");
+
+  progressEl.innerHTML="";
+  doneEl.innerHTML="";
+
+  data.forEach((d,i)=>{
+    const html = `
+      <div class="item">
+        <strong>${d.name}</strong> (${d.phone})<br>
+        👕 ${d.items.join(", ")}<br>
+        💰 ${d.price}원<br>
+        📅 ${d.date}<br>
+
+        ${!d.done ? `<button onclick="complete(${i})">완료+문자</button>` : ""}
+
+        <button onclick="edit(${i})">수정</button>
+        <button onclick="removeData(${i})">삭제</button>
+      </div>
+    `;
+
+    if(d.done) doneEl.innerHTML += html;
+    else progressEl.innerHTML += html;
+  });
+}
+
+render();
 </script>
 
 </body>
