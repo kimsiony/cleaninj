@@ -1,0 +1,332 @@
+import { useState } from "react";
+
+const TOP_ITEMS = [
+  "반팔 티셔츠","긴팔 티셔츠","맨투맨","후드티","니트/스웨터","가디건",
+  "셔츠","블라우스","폴로셔츠","탱크탑","크롭탑","나시",
+  "집업","코트","롱코트","트렌치코트","더스터코트","패딩","롱패딩","숏패딩",
+  "점퍼","야구점퍼","바람막이","아노락","자켓","청자켓","가죽자켓","수트재킷",
+  "조끼/베스트","레이스탑","오프숄더","터틀넥","후리스","플리스","집업후드"
+];
+
+const BOTTOM_ITEMS = [
+  "청바지","슬림청바지","와이드청바지","스트레이트청바지","크롭청바지",
+  "면바지","슬랙스","정장바지","치노팬츠","린넨바지","카고팬츠","코듀로이팬츠",
+  "트레이닝바지","조거팬츠","와이드팬츠","배기팬츠","팔라쪼팬츠",
+  "반바지","청반바지","숏팬츠","핫팬츠","버뮤다팬츠",
+  "레깅스","스키니팬츠",
+  "미니스커트","미디스커트","맥시스커트","롱스커트","플리츠스커트","A라인스커트","랩스커트"
+];
+
+const ETC_ITEMS = [
+  "원피스","미니원피스","맥시원피스","미디원피스",
+  "점프수트","롬퍼","정장(투피스)","드레스","칵테일드레스","웨딩드레스",
+  "한복","생활한복","수영복","래쉬가드","운동복세트",
+  "속옷","브라","양말","스타킹","레깅스속옷",
+  "스카프","넥타이","머플러","모자","가방","벨트",
+  "이불","베개커버","침구세트","커튼","쿠션커버","담요"
+];
+
+const CAT_COLOR = {
+  top: { bg:"#DBEAFE", border:"#93C5FD", text:"#1D4ED8", badge:"#EFF6FF" },
+  bottom: { bg:"#DCFCE7", border:"#86EFAC", text:"#15803D", badge:"#F0FDF4" },
+  etc: { bg:"#F3E8FF", border:"#C084FC", text:"#7E22CE", badge:"#FAF5FF" }
+};
+const CAT_LABEL = { top:"상의", bottom:"하의", etc:"기타" };
+const CAT_EMOJI = { top:"👕", bottom:"👖", etc:"👗" };
+
+const today = new Date().toISOString().split("T")[0];
+let uid = 10;
+
+function CharacterSVG({ items, onClickTop, onClickBottom }) {
+  const hasTop = items.some(i => i.category === "top");
+  const hasBot = items.some(i => i.category === "bottom");
+  const topCount = items.filter(i => i.category === "top").length;
+  const botCount = items.filter(i => i.category === "bottom").length;
+  const topFill = hasTop ? "#93C5FD" : "#E0E7FF";
+  const botFill = hasBot ? "#86EFAC" : "#DCFCE7";
+  const topStroke = "#818CF8";
+  const botStroke = "#4ADE80";
+
+  return (
+    <svg width="130" height="210" viewBox="0 0 130 210" style={{display:"block",margin:"0 auto"}}>
+      {/* Hair */}
+      <ellipse cx="65" cy="18" rx="23" ry="12" fill="#5C3D2E"/>
+      {/* Head */}
+      <circle cx="65" cy="34" r="22" fill="#FDDCB5" stroke="#E8B87A" strokeWidth="1.5"/>
+      {/* Eyes */}
+      <circle cx="57" cy="30" r="3.5" fill="#333"/>
+      <circle cx="73" cy="30" r="3.5" fill="#333"/>
+      <circle cx="58" cy="29" r="1.2" fill="white"/>
+      <circle cx="74" cy="29" r="1.2" fill="white"/>
+      {/* Blush */}
+      <circle cx="49" cy="37" r="5" fill="#FFB3B3" opacity="0.5"/>
+      <circle cx="81" cy="37" r="5" fill="#FFB3B3" opacity="0.5"/>
+      {/* Smile */}
+      <path d="M57 40 Q65 47 73 40" stroke="#E8856A" strokeWidth="1.8" fill="none" strokeLinecap="round"/>
+      {/* Neck */}
+      <rect x="57" y="54" width="16" height="10" fill="#FDDCB5"/>
+
+      {/* Body / Top - clickable */}
+      <g onClick={onClickTop} style={{cursor:"pointer"}}>
+        <rect x="37" y="62" width="56" height="55" rx="10" fill={topFill} stroke={topStroke} strokeWidth="2"/>
+        <rect x="14" y="64" width="23" height="42" rx="10" fill={topFill} stroke={topStroke} strokeWidth="2"/>
+        <rect x="93" y="64" width="23" height="42" rx="10" fill={topFill} stroke={topStroke} strokeWidth="2"/>
+        {hasTop
+          ? <text x="65" y="94" textAnchor="middle" fontSize="11" fill="#3730A3" fontWeight="bold">{topCount}종</text>
+          : <text x="65" y="94" textAnchor="middle" fontSize="11" fill="#6366F1">상의 +</text>
+        }
+      </g>
+
+      {/* Waistband */}
+      <rect x="37" y="115" width="56" height="8" rx="3" fill={hasBot ? "#4ADE80" : "#A7F3D0"} onClick={onClickBottom} style={{cursor:"pointer"}}/>
+
+      {/* Bottom - clickable */}
+      <g onClick={onClickBottom} style={{cursor:"pointer"}}>
+        <rect x="37" y="121" width="25" height="62" rx="8" fill={botFill} stroke={botStroke} strokeWidth="2"/>
+        <rect x="68" y="121" width="25" height="62" rx="8" fill={botFill} stroke={botStroke} strokeWidth="2"/>
+        {hasBot
+          ? <text x="65" y="157" textAnchor="middle" fontSize="11" fill="#166534" fontWeight="bold">{botCount}종</text>
+          : <text x="65" y="157" textAnchor="middle" fontSize="11" fill="#16A34A">하의 +</text>
+        }
+      </g>
+
+      {/* Shoes */}
+      <ellipse cx="50" cy="189" rx="13" ry="5" fill="#5C3D2E"/>
+      <ellipse cx="80" cy="189" rx="13" ry="5" fill="#5C3D2E"/>
+    </svg>
+  );
+}
+
+function Picker({ type, onSelect, onClose }) {
+  const [search, setSearch] = useState("");
+  if (!type) return null;
+  const all = type === "top" ? TOP_ITEMS : type === "bottom" ? BOTTOM_ITEMS : ETC_ITEMS;
+  const filtered = all.filter(i => i.includes(search));
+  const c = CAT_COLOR[type];
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.45)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:100}} onClick={onClose}>
+      <div style={{background:"white",borderRadius:"20px 20px 0 0",width:"100%",maxWidth:480,padding:16,maxHeight:"75vh",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+          <h3 style={{fontWeight:"bold",fontSize:18}}>{CAT_EMOJI[type]} {CAT_LABEL[type]} 선택</h3>
+          <button onClick={onClose} style={{fontSize:20,color:"#999",background:"none",border:"none",cursor:"pointer"}}>✕</button>
+        </div>
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="검색..." style={{border:"1px solid #e5e7eb",borderRadius:10,padding:"8px 12px",marginBottom:10,fontSize:14}}/>
+        <div style={{overflowY:"auto",display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
+          {filtered.map(item=>(
+            <button key={item} onClick={()=>onSelect(type,item)}
+              style={{border:`1.5px solid ${c.border}`,borderRadius:10,padding:"8px 4px",fontSize:13,cursor:"pointer",background:c.badge,color:c.text,fontWeight:500,transition:"all .15s"}}>
+              {item}
+            </button>
+          ))}
+          {filtered.length===0 && <p style={{gridColumn:"span 3",textAlign:"center",color:"#999",padding:16}}>검색 결과 없음</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function App() {
+  const [view, setView] = useState("list");
+  const [customers, setCustomers] = useState([
+    {id:1,name:"김민준",phone:"010-1234-5678",receiveDate:"2026-04-27",pickupDate:"2026-04-30",price:"25000",status:"세탁중",items:[{category:"top",type:"패딩",count:1},{category:"bottom",type:"청바지",count:2}]},
+    {id:2,name:"이서연",phone:"010-9876-5432",receiveDate:"2026-04-26",pickupDate:"2026-04-28",price:"12000",status:"완료",items:[{category:"top",type:"블라우스",count:1},{category:"etc",type:"원피스",count:1}]},
+  ]);
+  const [form, setForm] = useState({name:"",phone:"",receiveDate:today,pickupDate:"",price:"",items:[]});
+  const [picker, setPicker] = useState(null);
+  const [detailId, setDetailId] = useState(null);
+
+  const addItem = (cat, type) => {
+    setForm(f => {
+      const ex = f.items.find(i=>i.type===type);
+      if (ex) return {...f, items:f.items.map(i=>i.type===type?{...i,count:i.count+1}:i)};
+      return {...f, items:[...f.items,{category:cat,type,count:1}]};
+    });
+    setPicker(null);
+  };
+
+  const removeItem = type => setForm(f=>({...f,items:f.items.filter(i=>i.type!==type)}));
+
+  const submit = () => {
+    if (!form.name.trim()||!form.phone.trim()) return alert("이름과 연락처를 입력해주세요");
+    setCustomers(cs=>[...cs,{...form,id:++uid,status:"세탁중"}]);
+    setForm({name:"",phone:"",receiveDate:today,pickupDate:"",price:"",items:[]});
+    setView("list");
+  };
+
+  const toggleStatus = id => setCustomers(cs=>cs.map(c=>c.id===id?{...c,status:c.status==="완료"?"세탁중":"완료"}:c));
+  const deleteCustomer = id => { setCustomers(cs=>cs.filter(c=>c.id!==id)); setView("list"); };
+
+  const S = {
+    page:{minHeight:"100vh",background:"#F8FAFC",padding:16,maxWidth:480,margin:"0 auto",fontFamily:"system-ui,sans-serif"},
+    card:{background:"white",borderRadius:16,padding:16,boxShadow:"0 1px 4px rgba(0,0,0,0.08)",marginBottom:12},
+    input:{width:"100%",border:"1px solid #E5E7EB",borderRadius:12,padding:"10px 14px",fontSize:14,outline:"none",boxSizing:"border-box"},
+    btn:{background:"#3B82F6",color:"white",border:"none",borderRadius:12,padding:"12px 20px",fontWeight:600,fontSize:15,cursor:"pointer",width:"100%"},
+    tag:(cat)=>({display:"inline-flex",alignItems:"center",gap:4,padding:"4px 10px",borderRadius:999,fontSize:13,fontWeight:500,background:CAT_COLOR[cat].badge,color:CAT_COLOR[cat].text,border:`1px solid ${CAT_COLOR[cat].border}`,margin:2}),
+  };
+
+  /* DETAIL */
+  if (view==="detail") {
+    const c = customers.find(x=>x.id===detailId);
+    if (!c) { setView("list"); return null; }
+    return (
+      <div style={S.page}>
+        <button onClick={()=>setView("list")} style={{background:"none",border:"none",color:"#3B82F6",fontSize:15,cursor:"pointer",marginBottom:12,padding:0}}>← 목록으로</button>
+        <div style={S.card}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
+            <div>
+              <h2 style={{fontSize:22,fontWeight:"bold",margin:0}}>{c.name}</h2>
+              <p style={{color:"#6B7280",fontSize:14,margin:"2px 0 0"}}>{c.phone}</p>
+            </div>
+            <span style={{padding:"4px 12px",borderRadius:999,fontSize:13,fontWeight:600,background:c.status==="완료"?"#DCFCE7":"#FEF3C7",color:c.status==="완료"?"#15803D":"#B45309"}}>
+              {c.status}
+            </span>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:8,fontSize:14,marginBottom:12}}>
+            {[["맡긴 날짜",c.receiveDate],["찾는 날짜",c.pickupDate||"미정"],["가격",c.price?Number(c.price).toLocaleString()+"원":"미정"]].map(([k,v])=>(
+              <div key={k} style={{display:"flex",justifyContent:"space-between"}}>
+                <span style={{color:"#9CA3AF"}}>{k}</span>
+                <span style={{fontWeight:k==="가격"?700:400,color:k==="가격"?"#2563EB":"#111"}}>{v}</span>
+              </div>
+            ))}
+          </div>
+          <hr style={{border:"none",borderTop:"1px solid #F3F4F6",margin:"12px 0"}}/>
+          <p style={{fontWeight:600,marginBottom:8}}>맡긴 항목 ({c.items.reduce((a,i)=>a+i.count,0)}벌)</p>
+          <div>{c.items.map((item,i)=>(
+            <span key={i} style={S.tag(item.category)}>{CAT_EMOJI[item.category]} {item.type}{item.count>1?` ×${item.count}`:""}</span>
+          ))}</div>
+          <button onClick={()=>{
+              toggleStatus(c.id);
+              if(c.status==="세탁중"){
+                const items = c.items.map(i=>`${i.type}${i.count>1?` ${i.count}벌`:""}`).join(", ");
+                const msg = `[세탁소] ${c.name} 고객님, 맡기신 세탁물(${items})이 완료되었습니다. 찾아가실 수 있습니다 😊`;
+                window.location.href = `sms:${c.phone}?body=${encodeURIComponent(msg)}`;
+              }
+            }}
+            style={{...S.btn,marginTop:16,background:c.status==="완료"?"#9CA3AF":"#22C55E"}}>
+            {c.status==="완료"?"↩ 세탁중으로 되돌리기":"✅ 완료 처리 + 문자 보내기 📱"}
+          </button>
+          {c.status==="세탁중" && (
+            <button onClick={()=>{
+                const items = c.items.map(i=>`${i.type}${i.count>1?` ${i.count}벌`:""}`).join(", ");
+                const msg = `[세탁소] ${c.name} 고객님, 맡기신 세탁물(${items})이 완료되었습니다. 찾아가실 수 있습니다 😊`;
+                window.location.href = `sms:${c.phone}?body=${encodeURIComponent(msg)}`;
+              }}
+              style={{...S.btn,marginTop:8,background:"#EFF6FF",color:"#2563EB",border:"1px solid #93C5FD"}}>
+              📱 문자만 보내기
+            </button>
+          )}
+          <button onClick={()=>deleteCustomer(c.id)}
+            style={{...S.btn,marginTop:8,background:"#FEE2E2",color:"#DC2626"}}>
+            🗑 삭제
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  /* ADD */
+  if (view==="add") {
+    return (
+      <div style={S.page}>
+        <button onClick={()=>setView("list")} style={{background:"none",border:"none",color:"#3B82F6",fontSize:15,cursor:"pointer",marginBottom:12,padding:0}}>← 취소</button>
+        <h2 style={{fontSize:20,fontWeight:"bold",marginBottom:12}}>새 고객 접수</h2>
+        <div style={S.card}>
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            <input style={S.input} placeholder="고객 이름" value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))}/>
+            <input style={S.input} placeholder="연락처 (010-xxxx-xxxx)" value={form.phone} onChange={e=>setForm(f=>({...f,phone:e.target.value}))}/>
+            <div style={{display:"flex",gap:8}}>
+              <div style={{flex:1}}>
+                <p style={{fontSize:12,color:"#9CA3AF",marginBottom:4}}>맡긴 날짜</p>
+                <input type="date" style={S.input} value={form.receiveDate} onChange={e=>setForm(f=>({...f,receiveDate:e.target.value}))}/>
+              </div>
+              <div style={{flex:1}}>
+                <p style={{fontSize:12,color:"#9CA3AF",marginBottom:4}}>찾는 날짜</p>
+                <input type="date" style={S.input} value={form.pickupDate} onChange={e=>setForm(f=>({...f,pickupDate:e.target.value}))}/>
+              </div>
+            </div>
+            <input style={S.input} type="number" placeholder="가격 (원)" value={form.price} onChange={e=>setForm(f=>({...f,price:e.target.value}))}/>
+          </div>
+        </div>
+
+        <div style={{...S.card,textAlign:"center"}}>
+          <p style={{color:"#9CA3AF",fontSize:13,marginBottom:12}}>캐릭터의 상의 / 하의를 눌러서 옷을 추가하세요</p>
+          <CharacterSVG items={form.items} onClickTop={()=>setPicker("top")} onClickBottom={()=>setPicker("bottom")}/>
+          <button onClick={()=>setPicker("etc")} style={{marginTop:12,background:"#F3E8FF",color:"#7E22CE",border:"1px solid #C084FC",borderRadius:999,padding:"6px 16px",fontSize:13,cursor:"pointer",fontWeight:500}}>
+            👗 기타 항목 추가
+          </button>
+          {form.items.length>0 && (
+            <div style={{marginTop:12,textAlign:"left"}}>
+              <p style={{fontSize:13,fontWeight:600,marginBottom:6}}>선택된 항목</p>
+              {form.items.map((item,i)=>(
+                <span key={i} style={S.tag(item.category)}>
+                  {CAT_EMOJI[item.category]} {item.type}{item.count>1?` ×${item.count}`:""}
+                  <span onClick={()=>removeItem(item.type)} style={{cursor:"pointer",color:"#EF4444",marginLeft:4,fontWeight:"bold"}}>×</span>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <button onClick={submit} style={S.btn}>접수 완료</button>
+        <Picker type={picker} onSelect={addItem} onClose={()=>setPicker(null)}/>
+      </div>
+    );
+  }
+
+  /* LIST */
+  const washing = customers.filter(c=>c.status==="세탁중");
+  const done = customers.filter(c=>c.status==="완료");
+
+  return (
+    <div style={S.page}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+        <div>
+          <h1 style={{fontSize:26,fontWeight:"bold",margin:0}}>🧺 세탁소</h1>
+          <p style={{color:"#9CA3AF",fontSize:13,margin:"2px 0 0"}}>총 {customers.length}건 접수</p>
+        </div>
+        <button onClick={()=>setView("add")} style={{...S.btn,width:"auto",padding:"10px 18px",fontSize:14}}>+ 접수</button>
+      </div>
+
+      {washing.length>0 && <>
+        <p style={{color:"#D97706",fontWeight:600,marginBottom:8}}>🔄 세탁중 ({washing.length})</p>
+        {washing.map(c=>(
+          <div key={c.id} onClick={()=>{setDetailId(c.id);setView("detail");}} style={{...S.card,cursor:"pointer",borderLeft:"4px solid #F59E0B",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div>
+              <p style={{fontWeight:700,fontSize:16,margin:0}}>{c.name}</p>
+              <p style={{color:"#9CA3AF",fontSize:13,margin:"2px 0"}}>{c.phone} · {c.items.reduce((a,i)=>a+i.count,0)}벌</p>
+              <p style={{color:"#CBD5E1",fontSize:12}}>찾는 날짜: {c.pickupDate||"미정"}</p>
+            </div>
+            <div style={{textAlign:"right"}}>
+              <p style={{fontWeight:700,color:"#2563EB",margin:0}}>{c.price?Number(c.price).toLocaleString()+"원":"-"}</p>
+              <span style={{fontSize:12,background:"#FEF3C7",color:"#B45309",padding:"2px 8px",borderRadius:999}}>세탁중</span>
+            </div>
+          </div>
+        ))}
+      </>}
+
+      {done.length>0 && <>
+        <p style={{color:"#16A34A",fontWeight:600,marginBottom:8,marginTop:4}}>✅ 완료 ({done.length})</p>
+        {done.map(c=>(
+          <div key={c.id} onClick={()=>{setDetailId(c.id);setView("detail");}} style={{...S.card,cursor:"pointer",borderLeft:"4px solid #22C55E",display:"flex",justifyContent:"space-between",alignItems:"center",opacity:.75}}>
+            <div>
+              <p style={{fontWeight:700,fontSize:16,margin:0}}>{c.name}</p>
+              <p style={{color:"#9CA3AF",fontSize:13,margin:"2px 0"}}>{c.phone} · {c.items.reduce((a,i)=>a+i.count,0)}벌</p>
+            </div>
+            <div style={{textAlign:"right"}}>
+              <p style={{fontWeight:700,color:"#6B7280",margin:0}}>{c.price?Number(c.price).toLocaleString()+"원":"-"}</p>
+              <span style={{fontSize:12,background:"#DCFCE7",color:"#15803D",padding:"2px 8px",borderRadius:999}}>완료</span>
+            </div>
+          </div>
+        ))}
+      </>}
+
+      {customers.length===0 && (
+        <div style={{textAlign:"center",color:"#9CA3AF",marginTop:80}}>
+          <div style={{fontSize:64,marginBottom:12}}>🧺</div>
+          <p>접수된 고객이 없습니다</p>
+        </div>
+      )}
+    </div>
+  );
+}
