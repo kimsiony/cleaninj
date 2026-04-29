@@ -23,18 +23,13 @@ button{cursor:pointer}
 const {useState,useEffect} = React;
 const today = new Date().toISOString().split("T")[0];
 
-const TOP = ["티셔츠","셔츠","니트","패딩","코트","자켓"];
-const BOTTOM = ["청바지","슬랙스","반바지","치마"];
-const ETC = ["원피스","이불","가방","커튼"];
-
 function App(){
 
 const [view,setView]=useState("list");
-const [picker,setPicker]=useState(null);
 const [search,setSearch]=useState("");
 const [selected,setSelected]=useState(null);
 const [editMsg,setEditMsg]=useState("");
-const [customItem,setCustomItem]=useState("");
+const [editingId,setEditingId]=useState(null);
 
 const [customers,setCustomers]=useState(()=>{
   const s=localStorage.getItem("laundry");
@@ -42,7 +37,7 @@ const [customers,setCustomers]=useState(()=>{
 });
 
 const [form,setForm]=useState({
-  name:"",phone:"",price:"",pickupDate:"",items:[]
+  name:"",phone:"",price:"",pickupDate:""
 });
 
 /* 저장 */
@@ -50,61 +45,66 @@ useEffect(()=>{
   localStorage.setItem("laundry",JSON.stringify(customers));
 },[customers]);
 
-/* 메시지 생성 */
+/* 메시지 */
 const makeMsg=c=>`안녕하세요 ${c.name}님 😊
 세탁이 완료되었습니다.
-편하신 시간에 방문 부탁드립니다 🙏`;
+방문 부탁드립니다 🙏`;
 
-/* 문자 바로 */
-const sendSMSDirect=(c)=>{
+/* 문자 */
+const sendSMSDirect=c=>{
   window.location.href=`sms:${c.phone}?body=${encodeURIComponent(makeMsg(c))}`;
 };
 
-/* 카톡 바로 */
-const sendKakaoDirect=(c)=>{
+/* 카톡 */
+const sendKakaoDirect=c=>{
   window.open(`https://share.kakao.com/?text=${encodeURIComponent(makeMsg(c))}`);
 };
 
-/* 수정 */
-const openEdit=(c)=>{
+/* 수정창 */
+const openMsg=c=>{
   setSelected(c);
   setEditMsg(makeMsg(c));
 };
 
-/* 수정 후 문자 */
 const sendSMS=()=>{
   window.location.href=`sms:${selected.phone}?body=${encodeURIComponent(editMsg)}`;
 };
 
-/* 수정 후 카톡 */
 const sendKakao=()=>{
   window.open(`https://share.kakao.com/?text=${encodeURIComponent(editMsg)}`);
 };
 
-/* 품목 추가 */
-const addItem=(cat,type)=>{
-  setForm(f=>({...f,items:[...f.items,{cat,type}]}));
-  setPicker(null);
+/* ✔ 고객 수정 시작 */
+const startEdit=(c)=>{
+  setForm({
+    name:c.name,
+    phone:c.phone,
+    price:c.price,
+    pickupDate:c.pickupDate
+  });
+  setEditingId(c.id);
+  setView("add");
 };
 
-/* 직접 입력 */
-const addCustomItem=()=>{
-  if(!customItem.trim()) return;
-  setForm(f=>({...f,items:[...f.items,{cat:"etc",type:customItem}]}));
-  setCustomItem("");
-  setPicker(null);
-};
-
-/* 저장 */
+/* 저장 (수정/신규 분기) */
 const submit=()=>{
   if(!form.name||!form.phone) return alert("입력");
-  setCustomers([...customers,{
-    ...form,
-    id:Date.now(),
-    status:"세탁중",
-    date:today
-  }]);
-  setForm({name:"",phone:"",price:"",pickupDate:"",items:[]});
+
+  if(editingId){
+    setCustomers(customers.map(c=>
+      c.id===editingId?{...c,...form}:c
+    ));
+  }else{
+    setCustomers([...customers,{
+      ...form,
+      id:Date.now(),
+      status:"세탁중",
+      date:today
+    }]);
+  }
+
+  setForm({name:"",phone:"",price:"",pickupDate:""});
+  setEditingId(null);
   setView("list");
 };
 
@@ -113,60 +113,24 @@ const list=customers.filter(c=>
   c.name.includes(search)||c.phone.includes(search)
 );
 
-/* 엑셀 */
-const exportCSV=()=>{
-  let rows=[["이름","연락처","가격","상태","날짜","항목"]];
-  customers.forEach(c=>{
-    rows.push([
-      c.name,c.phone,c.price,c.status,c.date,
-      c.items.map(i=>i.type).join("|")
-    ]);
-  });
-  const blob=new Blob(["\ufeff"+rows.map(r=>r.join(",")).join("\n")]);
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(blob);
-  a.download="세탁소.csv";
-  a.click();
-};
-
-/* 접수 화면 */
+/* 접수/수정 화면 */
 if(view==="add"){
 return (
 <div style={page}>
-<h2>접수</h2>
+<h2>{editingId?"고객 수정":"접수"}</h2>
 
 <input placeholder="이름" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} style={input}/>
 <input placeholder="연락처" value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} style={input}/>
 <input placeholder="가격" value={form.price} onChange={e=>setForm({...form,price:e.target.value})} style={input}/>
 <input type="date" value={form.pickupDate} onChange={e=>setForm({...form,pickupDate:e.target.value})} style={input}/>
 
-<button onClick={()=>setPicker("top")} style={btnGray}>상의</button>
-<button onClick={()=>setPicker("bottom")} style={btnGray}>하의</button>
-<button onClick={()=>setPicker("etc")} style={btnGray}>기타</button>
+<button onClick={submit} style={btn}>
+{editingId?"수정 완료":"저장"}
+</button>
 
-<div>
-{form.items.map((i,idx)=><span key={idx} style={tag}>{i.type}</span>)}
-</div>
-
-<button onClick={submit} style={btn}>저장</button>
-<button onClick={()=>setView("list")} style={btnGray}>뒤로</button>
-
-{picker && (
-<div style={modal}>
-{(picker==="top"?TOP:picker==="bottom"?BOTTOM:ETC).map(i=>(
-<button key={i} onClick={()=>addItem(picker,i)} style={btnSmall}>{i}</button>
-))}
-
-{picker==="etc" && (
-<div>
-<input placeholder="직접 입력" value={customItem}
- onChange={e=>setCustomItem(e.target.value)} style={input}/>
-<button onClick={addCustomItem} style={btn}>추가</button>
-</div>
-)}
-
-</div>
-)}
+<button onClick={()=>{setView("list");setEditingId(null)}} style={btnGray}>
+취소
+</button>
 
 </div>
 );
@@ -180,7 +144,6 @@ return (
 <input placeholder="검색" value={search} onChange={e=>setSearch(e.target.value)} style={input}/>
 
 <button onClick={()=>setView("add")} style={btn}>+ 접수</button>
-<button onClick={exportCSV} style={btnGray}>엑셀</button>
 
 {list.map(c=>(
 <div key={c.id} style={card}>
@@ -190,12 +153,17 @@ return (
 
 <button onClick={()=>sendSMSDirect(c)} style={btnSmall}>📩 문자</button>
 <button onClick={()=>sendKakaoDirect(c)} style={btnSmall}>💬 카톡</button>
-<button onClick={()=>openEdit(c)} style={btnSmall}>✏️ 수정</button>
+
+<button onClick={()=>openMsg(c)} style={btnSmall}>✏️ 메시지수정</button>
+
+<button onClick={()=>startEdit(c)} style={btnSmall}>
+🛠 고객수정
+</button>
 
 </div>
 ))}
 
-/* 수정창 */
+/* 메시지 수정 */
 {selected && (
 <div style={modal}>
 <textarea value={editMsg} onChange={e=>setEditMsg(e.target.value)} style={{width:"100%",height:120}}/>
@@ -215,7 +183,6 @@ const btn={width:"100%",padding:12,marginTop:10,background:"#3b82f6",color:"#fff
 const btnGray={...btn,background:"#94a3b8"};
 const btnSmall={margin:3,padding:6,borderRadius:6};
 const card={background:"#fff",padding:10,marginTop:10,borderRadius:10};
-const tag={background:"#e0e7ff",padding:"3px 6px",margin:3,display:"inline-block"};
 const modal={position:"fixed",bottom:0,left:0,right:0,background:"#fff",padding:10};
 
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
