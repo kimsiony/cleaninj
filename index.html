@@ -1,47 +1,17 @@
-<!-- Updated index.html for laundry app -->
-
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Laundry App</title>
+    <title>Improved Page</title>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var container = document.getElementById('content');
+            var newElement = document.createElement('div');
+            newElement.textContent = 'This is a safe way to add content.';
+            container.appendChild(newElement);
+        });
+    </script>
 </head>
 <body>
-
-    <h1>Laundry History</h1>
-    <div id="history"></div>
-
-    <script>
-        let laundryHistory = [];
-
-        function addToHistory(price, pickupDate) {
-            const record = { price, pickupDate };
-            laundryHistory.push(record);
-            displayHistory();
-        }
-
-        function displayHistory() {
-            const historyDiv = document.getElementById('history');
-            historyDiv.innerHTML = '';
-            laundryHistory.forEach(item => {
-                historyDiv.innerHTML += `<p>Price: ${item.price}, Pickup Date: ${item.pickupDate}</p>`;
-            });
-        }
-
-        function resetForm() {
-            // Your form resetting logic here
-        }
-
-        function handleError(response) {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response;
-        }
-
-        // Example usage
-        addToHistory(20, '2026-04-30');
-
-    </script>
-
+    <div id="content"></div>
 </body>
 </html>
