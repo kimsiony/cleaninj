@@ -23,9 +23,15 @@ button{cursor:pointer}
 const {useState,useEffect} = React;
 const today = new Date().toISOString().split("T")[0];
 
+const TOP = ["티셔츠","셔츠","니트","패딩","코트","자켓"];
+const BOTTOM = ["청바지","슬랙스","반바지","치마"];
+const ETC = ["원피스","이불","가방","커튼"];
+const STATUS = ["세탁대기","세탁중","세탁완료"];
+
 function App(){
 
 const [view,setView]=useState("list");
+const [picker,setPicker]=useState(null);
 const [search,setSearch]=useState("");
 const [selected,setSelected]=useState(null);
 const [editMsg,setEditMsg]=useState("");
@@ -37,7 +43,7 @@ const [customers,setCustomers]=useState(()=>{
 });
 
 const [form,setForm]=useState({
-  name:"",phone:"",price:"",pickupDate:""
+  name:"",phone:"",price:"",pickupDate:"",items:[]
 });
 
 /* 저장 */
@@ -45,57 +51,47 @@ useEffect(()=>{
   localStorage.setItem("laundry",JSON.stringify(customers));
 },[customers]);
 
-/* 메시지 */
-const makeMsg=c=>`안녕하세요 ${c.name}님 😊
-세탁이 완료되었습니다.
-방문 부탁드립니다 🙏`;
-
-/* 문자 */
-const sendSMSDirect=c=>{
-  window.location.href=`sms:${c.phone}?body=${encodeURIComponent(makeMsg(c))}`;
+/* 상태 */
+const changeStatus=id=>{
+  setCustomers(customers.map(c=>{
+    if(c.id!==id) return c;
+    const idx=STATUS.indexOf(c.status);
+    return {...c,status:STATUS[(idx+1)%3]};
+  }));
 };
 
-/* 카톡 */
-const sendKakaoDirect=c=>{
-  window.open(`https://share.kakao.com/?text=${encodeURIComponent(makeMsg(c))}`);
+/* 색상 */
+const color=s=>{
+  if(s==="세탁대기") return "#94a3b8";
+  if(s==="세탁중") return "#f59e0b";
+  return "#22c55e";
 };
 
-/* 메시지 수정 */
-const openMsg=c=>{
-  setSelected(c);
-  setEditMsg(makeMsg(c));
-};
-
-const sendSMS=()=>{
-  window.location.href=`sms:${selected.phone}?body=${encodeURIComponent(editMsg)}`;
-};
-
-const sendKakao=()=>{
-  window.open(`https://share.kakao.com/?text=${encodeURIComponent(editMsg)}`);
-};
-
-/* 고객 수정 */
-const startEdit=(c)=>{
-  setForm({
-    name:c.name,
-    phone:c.phone,
-    price:c.price,
-    pickupDate:c.pickupDate
+/* 품목 추가 */
+const addItem=(cat,type)=>{
+  setForm(f=>{
+    const exist=f.items.find(i=>i.type===type);
+    if(exist){
+      return {
+        ...f,
+        items:f.items.map(i=>i.type===type?{...i,count:i.count+1}:i)
+      };
+    }
+    return {...f,items:[...f.items,{cat,type,count:1}]};
   });
-  setEditingId(c.id);
-  setView("add");
+  setPicker(null);
 };
 
-/* ✔ 고객 삭제 */
-const deleteCustomer=(id)=>{
-  if(!confirm("정말 삭제하시겠습니까?")) return;
-
-  setCustomers(customers.filter(c=>c.id!==id));
-
-  // 혹시 메시지창 열려있으면 닫기
-  if(selected && selected.id===id){
-    setSelected(null);
-  }
+/* 수량 변경 */
+const changeCount=(type,delta)=>{
+  setForm(f=>({
+    ...f,
+    items:f.items.map(i=>{
+      if(i.type!==type) return i;
+      const newCount=i.count+delta;
+      return newCount<=0?null:{...i,count:newCount};
+    }).filter(Boolean)
+  }));
 };
 
 /* 저장 */
@@ -103,87 +99,68 @@ const submit=()=>{
   if(!form.name||!form.phone) return alert("입력");
 
   if(editingId){
-    setCustomers(customers.map(c=>
-      c.id===editingId?{...c,...form}:c
-    ));
+    setCustomers(customers.map(c=>c.id===editingId?{...c,...form}:c));
   }else{
     setCustomers([...customers,{
       ...form,
       id:Date.now(),
-      status:"세탁중",
+      status:"세탁대기",
       date:today
     }]);
   }
 
-  setForm({name:"",phone:"",price:"",pickupDate:""});
+  setForm({name:"",phone:"",price:"",pickupDate:"",items:[]});
   setEditingId(null);
   setView("list");
 };
 
-/* 검색 */
-const list=customers.filter(c=>
-  c.name.includes(search)||c.phone.includes(search)
-);
+/* 삭제 */
+const del=id=>{
+  if(!confirm("삭제?")) return;
+  setCustomers(customers.filter(c=>c.id!==id));
+};
 
-/* 입력 화면 */
+/* 메시지 */
+const msg=c=>`안녕하세요 ${c.name}님 😊\n세탁 완료되었습니다.`;
+
+const sms=c=>window.location.href=`sms:${c.phone}?body=${encodeURIComponent(msg(c))}`;
+const kakao=c=>window.open(`https://share.kakao.com/?text=${encodeURIComponent(msg(c))}`);
+
+/* 입력 */
 if(view==="add"){
 return (
 <div style={page}>
-<h2>{editingId?"고객 수정":"접수"}</h2>
+<h2>접수</h2>
 
 <input placeholder="이름" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} style={input}/>
 <input placeholder="연락처" value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} style={input}/>
 <input placeholder="가격" value={form.price} onChange={e=>setForm({...form,price:e.target.value})} style={input}/>
 <input type="date" value={form.pickupDate} onChange={e=>setForm({...form,pickupDate:e.target.value})} style={input}/>
 
-<button onClick={submit} style={btn}>
-{editingId?"수정 완료":"저장"}
-</button>
+<button onClick={()=>setPicker("top")} style={btnGray}>상의</button>
+<button onClick={()=>setPicker("bottom")} style={btnGray}>하의</button>
+<button onClick={()=>setPicker("etc")} style={btnGray}>기타</button>
 
-<button onClick={()=>{setView("list");setEditingId(null)}} style={btnGray}>
-취소
-</button>
-
-</div>
-);
-}
-
-/* 리스트 */
-return (
-<div style={page}>
-<h1>🧺 세탁소</h1>
-
-<input placeholder="검색" value={search} onChange={e=>setSearch(e.target.value)} style={input}/>
-
-<button onClick={()=>setView("add")} style={btn}>+ 접수</button>
-
-{list.map(c=>(
-<div key={c.id} style={card}>
-<b>{c.name}</b> ({c.status})<br/>
-{c.phone}<br/>
-{c.price}원<br/>
-
-<button onClick={()=>sendSMSDirect(c)} style={btnSmall}>📩 문자</button>
-<button onClick={()=>sendKakaoDirect(c)} style={btnSmall}>💬 카톡</button>
-
-<button onClick={()=>openMsg(c)} style={btnSmall}>✏️ 메시지수정</button>
-
-<button onClick={()=>startEdit(c)} style={btnSmall}>🛠 수정</button>
-
-<button onClick={()=>deleteCustomer(c.id)} style={{...btnSmall,background:"#fecaca"}}>
-🗑 삭제
-</button>
-
+{/* 선택된 항목 */}
+<div>
+{form.items.map((i,idx)=>(
+<div key={idx} style={{margin:5}}>
+{i.type} x {i.count}
+<button onClick={()=>changeCount(i.type,1)}>+</button>
+<button onClick={()=>changeCount(i.type,-1)}>-</button>
 </div>
 ))}
+</div>
 
-/* 메시지 수정창 */
-{selected && (
+<button onClick={submit} style={btn}>저장</button>
+<button onClick={()=>setView("list")} style={btnGray}>취소</button>
+
+{/* 선택창 */}
+{picker && (
 <div style={modal}>
-<textarea value={editMsg} onChange={e=>setEditMsg(e.target.value)} style={{width:"100%",height:120}}/>
-<button onClick={sendSMS} style={btn}>문자 보내기</button>
-<button onClick={sendKakao} style={btn}>카톡 보내기</button>
-<button onClick={()=>setSelected(null)} style={btnGray}>닫기</button>
+{(picker==="top"?TOP:picker==="bottom"?BOTTOM:ETC).map(i=>(
+<button key={i} onClick={()=>addItem(picker,i)} style={btnSmall}>{i}</button>
+))}
 </div>
 )}
 
@@ -191,12 +168,43 @@ return (
 );
 }
 
+/* 리스트 */
+const list=customers.filter(c=>c.name.includes(search)||c.phone.includes(search));
+
+return (
+<div style={page}>
+<h1>🧺 세탁소</h1>
+
+<input placeholder="검색" value={search} onChange={e=>setSearch(e.target.value)} style={input}/>
+<button onClick={()=>setView("add")} style={btn}>+ 접수</button>
+
+{list.map(c=>(
+<div key={c.id} style={card}>
+<b>{c.name}</b><br/>
+{c.phone}<br/>
+{c.items.map(i=>`${i.type} x${i.count}`).join(",")}<br/>
+
+<button onClick={()=>changeStatus(c.id)} style={{...btnSmall,background:color(c.status),color:"#fff"}}>
+{c.status}
+</button>
+
+<button onClick={()=>sms(c)} style={btnSmall}>📩</button>
+<button onClick={()=>kakao(c)} style={btnSmall}>💬</button>
+<button onClick={()=>del(c.id)} style={btnSmall}>🗑</button>
+
+</div>
+))}
+
+</div>
+);
+}
+
 const page={padding:20,maxWidth:480,margin:"auto"};
-const input={width:"100%",padding:10,margin:"5px 0",borderRadius:8,border:"1px solid #ddd"};
-const btn={width:"100%",padding:12,marginTop:10,background:"#3b82f6",color:"#fff",border:"none",borderRadius:10};
+const input={width:"100%",padding:10,margin:"5px 0"};
+const btn={width:"100%",padding:12,marginTop:10,background:"#3b82f6",color:"#fff"};
 const btnGray={...btn,background:"#94a3b8"};
-const btnSmall={margin:3,padding:6,borderRadius:6};
-const card={background:"#fff",padding:10,marginTop:10,borderRadius:10};
+const btnSmall={margin:3,padding:6};
+const card={background:"#fff",padding:10,marginTop:10};
 const modal={position:"fixed",bottom:0,left:0,right:0,background:"#fff",padding:10};
 
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
