@@ -60,7 +60,7 @@ const sendKakaoDirect=c=>{
   window.open(`https://share.kakao.com/?text=${encodeURIComponent(makeMsg(c))}`);
 };
 
-/* 수정창 */
+/* 메시지 수정 */
 const openMsg=c=>{
   setSelected(c);
   setEditMsg(makeMsg(c));
@@ -74,7 +74,7 @@ const sendKakao=()=>{
   window.open(`https://share.kakao.com/?text=${encodeURIComponent(editMsg)}`);
 };
 
-/* ✔ 고객 수정 시작 */
+/* 고객 수정 */
 const startEdit=(c)=>{
   setForm({
     name:c.name,
@@ -86,7 +86,19 @@ const startEdit=(c)=>{
   setView("add");
 };
 
-/* 저장 (수정/신규 분기) */
+/* ✔ 고객 삭제 */
+const deleteCustomer=(id)=>{
+  if(!confirm("정말 삭제하시겠습니까?")) return;
+
+  setCustomers(customers.filter(c=>c.id!==id));
+
+  // 혹시 메시지창 열려있으면 닫기
+  if(selected && selected.id===id){
+    setSelected(null);
+  }
+};
+
+/* 저장 */
 const submit=()=>{
   if(!form.name||!form.phone) return alert("입력");
 
@@ -113,7 +125,7 @@ const list=customers.filter(c=>
   c.name.includes(search)||c.phone.includes(search)
 );
 
-/* 접수/수정 화면 */
+/* 입력 화면 */
 if(view==="add"){
 return (
 <div style={page}>
@@ -156,12 +168,15 @@ return (
 
 <button onClick={()=>openMsg(c)} style={btnSmall}>✏️ 메시지수정</button>
 
-<button onClick={()=>startEdit(c)} style={btnSmall}>
-🛠 고객수정
+<button onClick={()=>startEdit(c)} style={btnSmall}>🛠 수정</button>
+
+<button onClick={()=>deleteCustomer(c.id)} style={{...btnSmall,background:"#fecaca"}}>
+🗑 삭제
 </button>
 
 </div>
 ))}
+
 
 {selected && (
 <div style={modal}>
