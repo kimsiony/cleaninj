@@ -1,238 +1,227 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>세탁소 앱</title>
+<script type="text/babel">
 
-<style>
-body { margin:0; font-family:sans-serif; background:#f5f6f8; }
-.header { background:#2563eb; color:white; padding:15px; text-align:center; }
+const {useState,useEffect} = React;
+const today = new Date().toISOString().split("T")[0];
 
-.container { padding:15px; }
+const TOP = ["반팔티","긴팔티","맨투맨","후드","니트","셔츠","패딩","코트","자켓"];
+const BOTTOM = ["청바지","슬랙스","반바지","치마","레깅스"];
+const ETC = ["원피스","이불","커튼","가방","모자"];
 
-.character { text-align:center; font-size:50px; }
+function App(){
 
-input { width:100%; padding:10px; margin-top:8px; border-radius:8px; border:1px solid #ccc; }
+const [view,setView]=useState("list");
+const [picker,setPicker]=useState(null);
+const [search,setSearch]=useState("");
 
-button { margin-top:8px; padding:10px; border:none; border-radius:8px; background:#2563eb; color:white; }
+const [selected,setSelected]=useState(null);
+const [editCustomer,setEditCustomer]=useState(null);
+const [editMsg,setEditMsg]=useState("");
+const [customItem,setCustomItem]=useState("");
 
-.category button { margin-right:5px; }
+const [customers,setCustomers]=useState(()=>{
+  const s=localStorage.getItem("laundry");
+  return s?JSON.parse(s):[];
+});
 
-.item { background:white; padding:10px; border-radius:10px; margin-top:8px; }
+const [form,setForm]=useState({
+  name:"",phone:"",price:"",pickupDate:"",items:[]
+});
 
-h3,h4 { margin-top:20px; }
-</style>
-</head>
+useEffect(()=>{
+  localStorage.setItem("laundry",JSON.stringify(customers));
+},[customers]);
 
-<body>
-
-<div class="header">
-  <h2>은현이네 세탁소</h2>
-</div>
-
-<div class="container">
-
-  <!-- 접수 -->
-  <h3>고객 접수</h3>
-  <div class="character">🧑‍🔧</div>
-
-  <input id="name" placeholder="이름">
-  <input id="phone" placeholder="전화번호" oninput="findCustomer()">
-
-  <h4>📜 이전 기록</h4>
-  <div id="history"></div>
-
-  <div class="category">
-    <button onclick="selectCategory('상의')">상의</button>
-    <button onclick="selectCategory('하의')">하의</button>
-    <button onclick="selectCategory('신발')">신발</button>
-    <button onclick="selectCategory('모자')">모자</button>
-  </div>
-
-  <div id="options"></div>
-
-  <input id="custom" placeholder="직접 입력">
-
-  <h4>선택된 항목</h4>
-  <div id="selected"></div>
-
-  <input id="price" placeholder="가격">
-
-  <button onclick="save()">접수하기</button>
-
-  <!-- 리스트 -->
-  <h3>📦 진행중</h3>
-  <div id="progress"></div>
-
-  <h3>✅ 완료 고객</h3>
-  <div id="done"></div>
-
-</div>
-
-<script>
-let data = JSON.parse(localStorage.getItem("data") || "[]");
-let selectedItems = [];
-let currentCategory = "";
-
-const dataMap = {
-  "상의":["셔츠","티셔츠","니트"],
-  "하의":["청바지","슬랙스"],
-  "신발":["운동화","구두"],
-  "모자":["캡","비니"]
+/* 🔥 전화번호로 기존 고객 찾기 */
+const findCustomerByPhone=(phone)=>{
+  return customers.find(c=>c.phone===phone);
 };
 
-function getToday() {
-  return new Date().toISOString().split("T")[0];
-}
+/* 🔥 전화 입력 시 자동 불러오기 */
+const onPhoneChange=(phone)=>{
+  const exist=findCustomerByPhone(phone);
 
-/* 카테고리 */
-function selectCategory(cat){
-  currentCategory = cat;
-  const list = dataMap[cat];
-
-  let html = "<h4>"+cat+"</h4>";
-  list.forEach(item=>{
-    html += `<div class="item">${item} <button onclick="addItem('${item}')">+</button></div>`;
-  });
-
-  document.getElementById("options").innerHTML = html;
-}
-
-function addItem(item){
-  selectedItems.push(item);
-  renderSelected();
-}
-
-function renderSelected(){
-  const el = document.getElementById("selected");
-  el.innerHTML = "";
-
-  selectedItems.forEach((i,index)=>{
-    el.innerHTML += `<div class="item">${i} <button onclick="removeItem(${index})">❌</button></div>`;
-  });
-}
-
-function removeItem(i){
-  selectedItems.splice(i,1);
-  renderSelected();
-}
-
-/* 고객 찾기 */
-function findCustomer(){
-  const phone = document.getElementById("phone").value;
-
-  const historyEl = document.getElementById("history");
-  historyEl.innerHTML = "";
-
-  const list = data.filter(d=>d.phone === phone);
-
-  if(list.length>0){
-    document.getElementById("name").value = list[0].name;
-
-    list.slice().reverse().forEach(d=>{
-      historyEl.innerHTML += `
-        <div class="item">
-          📅 ${d.date}<br>
-          👕 ${d.items.join(", ")}<br>
-          💰 ${d.price}원
-        </div>
-      `;
-    });
-  }
-}
-
-/* 저장 */
-function save(){
-  const name = document.getElementById("name").value;
-  const phone = document.getElementById("phone").value;
-  const price = document.getElementById("price").value;
-  const custom = document.getElementById("custom").value;
-
-  if(custom) selectedItems.push(custom);
-
-  data.push({
-    name,
+  setForm(f=>({
+    ...f,
     phone,
-    items:[...selectedItems],
-    price,
-    done:false,
-    date:getToday()
-  });
+    name: exist ? exist.name : f.name
+  }));
+};
 
-  localStorage.setItem("data", JSON.stringify(data));
+/* 메시지 */
+const makeMsg=c=>`안녕하세요 ${c.name}님 😊
+세탁이 완료되었습니다.
+방문 부탁드립니다 🙏`;
 
-  alert("접수 완료!");
-  location.reload();
+/* 문자 / 카톡 */
+const sendSMSDirect=(c)=>{
+  window.location.href=`sms:${c.phone}?body=${encodeURIComponent(makeMsg(c))}`;
+};
+
+const sendKakaoDirect=(c)=>{
+  window.open(`https://share.kakao.com/?text=${encodeURIComponent(makeMsg(c))}`);
+};
+
+/* 저장 (🔥 기존 고객이면 "새 접수" 추가) */
+const submit=()=>{
+
+  if(!form.name||!form.phone) return alert("입력");
+
+  setCustomers([
+    ...customers,
+    {
+      ...form,
+      id:Date.now(),
+      status:"세탁중",
+      date:today
+    }
+  ]);
+
+  setForm({name:"",phone:"",price:"",pickupDate:"",items:[]});
+  setView("list");
+};
+
+/* 상태 변경 */
+const toggle=id=>{
+  setCustomers(customers.map(c=>
+    c.id===id?{...c,status:c.status==="완료"?"세탁중":"완료"}:c
+  ));
+};
+
+/* 🔥 고객 정보 수정 */
+const openEditCustomer=(phone)=>{
+  const c=findCustomerByPhone(phone);
+  setEditCustomer(c);
+};
+
+const saveCustomerEdit=()=>{
+  setCustomers(customers.map(c=>
+    c.phone===editCustomer.phone?editCustomer:c
+  ));
+  setEditCustomer(null);
+};
+
+/* 리스트 필터 */
+const list=customers.filter(c=>
+  c.name.includes(search)||c.phone.includes(search)
+);
+
+/* 접수 */
+if(view==="add"){
+return (
+<div style={page}>
+<h2>접수</h2>
+
+<input placeholder="이름" value={form.name}
+onChange={e=>setForm({...form,name:e.target.value})}
+style={input}/>
+
+{/* 🔥 핵심: 전화번호 자동조회 */}
+<input placeholder="연락처"
+value={form.phone}
+onChange={e=>onPhoneChange(e.target.value)}
+style={input}/>
+
+<button onClick={()=>{
+  const c=findCustomerByPhone(form.phone);
+  if(c) alert("기존 고객입니다. 정보가 자동 적용됩니다.");
+}} style={btnGray}>
+기존 고객 확인
+</button>
+
+<input placeholder="가격" value={form.price}
+onChange={e=>setForm({...form,price:e.target.value})}
+style={input}/>
+
+<input type="date" value={form.pickupDate}
+onChange={e=>setForm({...form,pickupDate:e.target.value})}
+style={input}/>
+
+<button onClick={()=>setPicker("top")} style={btnGray}>상의</button>
+<button onClick={()=>setPicker("bottom")} style={btnGray}>하의</button>
+<button onClick={()=>setPicker("etc")} style={btnGray}>기타</button>
+
+<div>
+{form.items.map((i,idx)=>
+<span key={idx} style={tag}>{i.type}</span>
+)}
+</div>
+
+<button onClick={submit} style={btn}>저장</button>
+<button onClick={()=>setView("list")} style={btnGray}>뒤로</button>
+
+{picker && (
+<div style={modal}>
+{(picker==="top"?TOP:picker==="bottom"?BOTTOM:ETC).map(i=>(
+<button key={i} onClick={()=>setForm(f=>({...f,items:[...f.items,{cat:picker,type:i}]}))}
+style={btnSmall}>{i}</button>
+))}
+
+</div>
+)}
+
+</div>
+);
 }
 
-/* 문자 */
-function sendSMS(phone){
-  const msg = "세탁이 완료되었습니다.\n한국사 세탁소\nT.02-2684-4003";
-  location.href = `sms:${phone}?body=${encodeURIComponent(msg)}`;
+/* 리스트 */
+return (
+<div style={page}>
+<h1>🧺 세탁소</h1>
+
+<input placeholder="검색" value={search}
+onChange={e=>setSearch(e.target.value)} style={input}/>
+
+<button onClick={()=>setView("add")} style={btn}>+ 접수</button>
+
+{list.map(c=>(
+<div key={c.id} style={card}>
+<b>{c.name}</b> ({c.status})<br/>
+{c.phone}<br/>
+{c.price}원<br/>
+
+<button onClick={()=>toggle(c.id)} style={btnSmall}>상태</button>
+<button onClick={()=>sendSMSDirect(c)} style={btnSmall}>📩 문자</button>
+<button onClick={()=>sendKakaoDirect(c)} style={btnSmall}>💬 카톡</button>
+
+{/* 🔥 고객 수정 */}
+<button onClick={()=>openEditCustomer(c.phone)} style={btnSmall}>
+👤 고객수정
+</button>
+
+</div>
+))}
+
+{/* 🔥 고객 수정 모달 */}
+{editCustomer && (
+<div style={modal}>
+<h3>고객정보 수정</h3>
+
+<input value={editCustomer.name}
+onChange={e=>setEditCustomer({...editCustomer,name:e.target.value})}
+style={input}/>
+
+<input value={editCustomer.phone}
+onChange={e=>setEditCustomer({...editCustomer,phone:e.target.value})}
+style={input}/>
+
+<button onClick={saveCustomerEdit} style={btn}>저장</button>
+<button onClick={()=>setEditCustomer(null)} style={btnGray}>닫기</button>
+</div>
+)}
+
+</div>
+);
 }
 
-/* 완료 */
-function complete(i){
-  data[i].done = true;
-  localStorage.setItem("data", JSON.stringify(data));
-  sendSMS(data[i].phone);
-  render();
-}
+const page={padding:20,maxWidth:480,margin:"auto"};
+const input={width:"100%",padding:10,margin:"5px 0",borderRadius:8,border:"1px solid #ddd"};
+const btn={width:"100%",padding:12,marginTop:10,background:"#3b82f6",color:"#fff",border:"none",borderRadius:10};
+const btnGray={...btn,background:"#94a3b8"};
+const btnSmall={margin:3,padding:6,borderRadius:6};
+const card={background:"#fff",padding:10,marginTop:10,borderRadius:10};
+const tag={background:"#e0e7ff",padding:"3px 6px",margin:3,display:"inline-block"};
+const modal={position:"fixed",bottom:0,left:0,right:0,background:"#fff",padding:10};
 
-/* 수정 */
-function edit(i){
-  const d = data[i];
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 
-  const name = prompt("이름", d.name);
-  const price = prompt("가격", d.price);
-
-  if(name) d.name = name;
-  if(price) d.price = price;
-
-  localStorage.setItem("data", JSON.stringify(data));
-  render();
-}
-
-/* 삭제 */
-function removeData(i){
-  if(confirm("삭제할까요?")){
-    data.splice(i,1);
-    localStorage.setItem("data", JSON.stringify(data));
-    render();
-  }
-}
-
-/* 렌더 */
-function render(){
-  const progressEl = document.getElementById("progress");
-  const doneEl = document.getElementById("done");
-
-  progressEl.innerHTML="";
-  doneEl.innerHTML="";
-
-  data.forEach((d,i)=>{
-    const html = `
-      <div class="item">
-        <strong>${d.name}</strong> (${d.phone})<br>
-        👕 ${d.items.join(", ")}<br>
-        💰 ${d.price}원<br>
-        📅 ${d.date}<br>
-
-        ${!d.done ? `<button onclick="complete(${i})">완료+문자</button>` : ""}
-
-        <button onclick="edit(${i})">수정</button>
-        <button onclick="removeData(${i})">삭제</button>
-      </div>
-    `;
-
-    if(d.done) doneEl.innerHTML += html;
-    else progressEl.innerHTML += html;
-  });
-}
-
-render();
 </script>
-
-</body>
-</html>
