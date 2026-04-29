@@ -1,3 +1,23 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>세탁소 앱</title>
+
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<style>
+body {margin:0;background:#f8fafc;font-family:system-ui;}
+button{cursor:pointer}
+</style>
+</head>
+
+<body>
+<div id="root"></div>
+
 <script type="text/babel">
 
 const {useState,useEffect} = React;
@@ -12,9 +32,7 @@ function App(){
 const [view,setView]=useState("list");
 const [picker,setPicker]=useState(null);
 const [search,setSearch]=useState("");
-
 const [selected,setSelected]=useState(null);
-const [editCustomer,setEditCustomer]=useState(null);
 const [editMsg,setEditMsg]=useState("");
 const [customItem,setCustomItem]=useState("");
 
@@ -31,119 +49,102 @@ useEffect(()=>{
   localStorage.setItem("laundry",JSON.stringify(customers));
 },[customers]);
 
-/* 🔥 전화번호로 기존 고객 찾기 */
-const findCustomerByPhone=(phone)=>{
-  return customers.find(c=>c.phone===phone);
-};
-
-/* 🔥 전화 입력 시 자동 불러오기 */
-const onPhoneChange=(phone)=>{
-  const exist=findCustomerByPhone(phone);
-
-  setForm(f=>({
-    ...f,
-    phone,
-    name: exist ? exist.name : f.name
-  }));
-};
-
-/* 메시지 */
 const makeMsg=c=>`안녕하세요 ${c.name}님 😊
 세탁이 완료되었습니다.
 방문 부탁드립니다 🙏`;
 
-/* 문자 / 카톡 */
+/* ✔ 바로 문자 */
 const sendSMSDirect=(c)=>{
-  window.location.href=`sms:${c.phone}?body=${encodeURIComponent(makeMsg(c))}`;
+  const msg = makeMsg(c);
+  window.location.href=`sms:${c.phone}?body=${encodeURIComponent(msg)}`;
 };
 
+/* ✔ 바로 카톡 */
 const sendKakaoDirect=(c)=>{
-  window.open(`https://share.kakao.com/?text=${encodeURIComponent(makeMsg(c))}`);
+  const msg = makeMsg(c);
+  window.open(`https://share.kakao.com/?text=${encodeURIComponent(msg)}`);
 };
 
-/* 저장 (🔥 기존 고객이면 "새 접수" 추가) */
+/* ✔ 수정 */
+const openEdit=(c)=>{
+  setSelected(c);
+  setEditMsg(makeMsg(c));
+};
+
+const sendSMS=()=>{
+  window.location.href=`sms:${selected.phone}?body=${encodeURIComponent(editMsg)}`;
+};
+
+const sendKakao=()=>{
+  window.open(`https://share.kakao.com/?text=${encodeURIComponent(editMsg)}`);
+};
+
+const addItem=(cat,type)=>{
+  setForm(f=>({...f,items:[...f.items,{cat,type}]}));
+  setPicker(null);
+};
+
+const addCustomItem=()=>{
+  if(!customItem.trim()) return;
+  setForm(f=>({...f,items:[...f.items,{cat:"etc",type:customItem}]}));
+  setCustomItem("");
+  setPicker(null);
+};
+
 const submit=()=>{
-
   if(!form.name||!form.phone) return alert("입력");
-
-  setCustomers([
-    ...customers,
-    {
-      ...form,
-      id:Date.now(),
-      status:"세탁중",
-      date:today
-    }
-  ]);
-
+  setCustomers([...customers,{
+    ...form,
+    id:Date.now(),
+    status:"세탁중",
+    date:today
+  }]);
   setForm({name:"",phone:"",price:"",pickupDate:"",items:[]});
   setView("list");
 };
 
-/* 상태 변경 */
 const toggle=id=>{
   setCustomers(customers.map(c=>
     c.id===id?{...c,status:c.status==="완료"?"세탁중":"완료"}:c
   ));
 };
 
-/* 🔥 고객 정보 수정 */
-const openEditCustomer=(phone)=>{
-  const c=findCustomerByPhone(phone);
-  setEditCustomer(c);
+const exportCSV=()=>{
+  let rows=[["이름","연락처","가격","상태","날짜","항목"]];
+  customers.forEach(c=>{
+    rows.push([
+      c.name,c.phone,c.price,c.status,c.date,
+      c.items.map(i=>i.type).join("|")
+    ]);
+  });
+  const blob=new Blob(["\ufeff"+rows.map(r=>r.join(",")).join("\n")]);
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="세탁소.csv";
+  a.click();
 };
 
-const saveCustomerEdit=()=>{
-  setCustomers(customers.map(c=>
-    c.phone===editCustomer.phone?editCustomer:c
-  ));
-  setEditCustomer(null);
-};
-
-/* 리스트 필터 */
 const list=customers.filter(c=>
   c.name.includes(search)||c.phone.includes(search)
 );
 
-/* 접수 */
+/* 접수 화면 */
 if(view==="add"){
 return (
 <div style={page}>
 <h2>접수</h2>
 
-<input placeholder="이름" value={form.name}
-onChange={e=>setForm({...form,name:e.target.value})}
-style={input}/>
-
-{/* 🔥 핵심: 전화번호 자동조회 */}
-<input placeholder="연락처"
-value={form.phone}
-onChange={e=>onPhoneChange(e.target.value)}
-style={input}/>
-
-<button onClick={()=>{
-  const c=findCustomerByPhone(form.phone);
-  if(c) alert("기존 고객입니다. 정보가 자동 적용됩니다.");
-}} style={btnGray}>
-기존 고객 확인
-</button>
-
-<input placeholder="가격" value={form.price}
-onChange={e=>setForm({...form,price:e.target.value})}
-style={input}/>
-
-<input type="date" value={form.pickupDate}
-onChange={e=>setForm({...form,pickupDate:e.target.value})}
-style={input}/>
+<input placeholder="이름" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} style={input}/>
+<input placeholder="연락처" value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} style={input}/>
+<input placeholder="가격" value={form.price} onChange={e=>setForm({...form,price:e.target.value})} style={input}/>
+<input type="date" value={form.pickupDate} onChange={e=>setForm({...form,pickupDate:e.target.value})} style={input}/>
 
 <button onClick={()=>setPicker("top")} style={btnGray}>상의</button>
 <button onClick={()=>setPicker("bottom")} style={btnGray}>하의</button>
 <button onClick={()=>setPicker("etc")} style={btnGray}>기타</button>
 
 <div>
-{form.items.map((i,idx)=>
-<span key={idx} style={tag}>{i.type}</span>
-)}
+{form.items.map((i,idx)=><span key={idx} style={tag}>{i.type}</span>)}
 </div>
 
 <button onClick={submit} style={btn}>저장</button>
@@ -152,9 +153,16 @@ style={input}/>
 {picker && (
 <div style={modal}>
 {(picker==="top"?TOP:picker==="bottom"?BOTTOM:ETC).map(i=>(
-<button key={i} onClick={()=>setForm(f=>({...f,items:[...f.items,{cat:picker,type:i}]}))}
-style={btnSmall}>{i}</button>
+<button key={i} onClick={()=>addItem(picker,i)} style={btnSmall}>{i}</button>
 ))}
+
+{picker==="etc" && (
+<div>
+<input placeholder="직접 입력" value={customItem}
+ onChange={e=>setCustomItem(e.target.value)} style={input}/>
+<button onClick={addCustomItem} style={btn}>추가</button>
+</div>
+)}
 
 </div>
 )}
@@ -168,10 +176,10 @@ return (
 <div style={page}>
 <h1>🧺 세탁소</h1>
 
-<input placeholder="검색" value={search}
-onChange={e=>setSearch(e.target.value)} style={input}/>
+<input placeholder="검색" value={search} onChange={e=>setSearch(e.target.value)} style={input}/>
 
 <button onClick={()=>setView("add")} style={btn}>+ 접수</button>
+<button onClick={exportCSV} style={btnGray}>엑셀</button>
 
 {list.map(c=>(
 <div key={c.id} style={card}>
@@ -180,32 +188,29 @@ onChange={e=>setSearch(e.target.value)} style={input}/>
 {c.price}원<br/>
 
 <button onClick={()=>toggle(c.id)} style={btnSmall}>상태</button>
-<button onClick={()=>sendSMSDirect(c)} style={btnSmall}>📩 문자</button>
-<button onClick={()=>sendKakaoDirect(c)} style={btnSmall}>💬 카톡</button>
 
-{/* 🔥 고객 수정 */}
-<button onClick={()=>openEditCustomer(c.phone)} style={btnSmall}>
-👤 고객수정
+<button onClick={()=>sendSMSDirect(c)} style={btnSmall}>
+📩 문자
+</button>
+
+<button onClick={()=>sendKakaoDirect(c)} style={btnSmall}>
+💬 카톡
+</button>
+
+<button onClick={()=>openEdit(c)} style={btnSmall}>
+✏️ 수정
 </button>
 
 </div>
 ))}
 
-{/* 🔥 고객 수정 모달 */}
-{editCustomer && (
+{/* 수정창 */}
+{selected && (
 <div style={modal}>
-<h3>고객정보 수정</h3>
-
-<input value={editCustomer.name}
-onChange={e=>setEditCustomer({...editCustomer,name:e.target.value})}
-style={input}/>
-
-<input value={editCustomer.phone}
-onChange={e=>setEditCustomer({...editCustomer,phone:e.target.value})}
-style={input}/>
-
-<button onClick={saveCustomerEdit} style={btn}>저장</button>
-<button onClick={()=>setEditCustomer(null)} style={btnGray}>닫기</button>
+<textarea value={editMsg} onChange={e=>setEditMsg(e.target.value)} style={{width:"100%",height:120}}/>
+<button onClick={sendSMS} style={btn}>문자 보내기</button>
+<button onClick={sendKakao} style={btn}>카톡 보내기</button>
+<button onClick={()=>setSelected(null)} style={btnGray}>닫기</button>
 </div>
 )}
 
@@ -225,3 +230,5 @@ const modal={position:"fixed",bottom:0,left:0,right:0,background:"#fff",padding:
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 
 </script>
+</body>
+</html>
