@@ -3,212 +3,214 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>세탁소 앱</title>
-
-<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<title>세탁소</title>
 
 <style>
-body {margin:0;background:#f8fafc;font-family:system-ui;}
-button{cursor:pointer}
+body{font-family:sans-serif;background:#f1f5f9;margin:0;padding:20px}
+.card{background:#fff;padding:10px;margin:10px 0;border-radius:10px}
+button{margin:3px;padding:6px;border-radius:6px;border:none;cursor:pointer}
+input{width:100%;padding:8px;margin:5px 0}
+.status{color:#fff;padding:6px;border-radius:8px;text-align:center;font-weight:bold}
 </style>
 </head>
 
 <body>
-<div id="root"></div>
 
-<script type="text/babel">
+<h2>🧺 세탁소</h2>
 
-const {useState,useEffect} = React;
-const today = new Date().toISOString().split("T")[0];
+<input id="search" placeholder="검색" oninput="render()">
+<button onclick="openForm()">+ 접수</button>
 
-const TOP = ["티셔츠","셔츠","니트","패딩","코트","자켓"];
-const BOTTOM = ["청바지","슬랙스","반바지","치마"];
-const ETC = ["원피스","이불","가방","커튼"];
-const STATUS = ["세탁대기","세탁중","세탁완료"];
+<div id="list"></div>
 
-function App(){
+<!-- 입력폼 -->
+<div id="formBox" style="display:none;background:#fff;padding:10px;border-radius:10px;">
+<h3 id="formTitle">접수</h3>
 
-const [view,setView]=useState("list");
-const [picker,setPicker]=useState(null);
-const [search,setSearch]=useState("");
-const [selected,setSelected]=useState(null);
-const [editMsg,setEditMsg]=useState("");
-const [editingId,setEditingId]=useState(null);
+<input id="name" placeholder="이름">
+<input id="phone" placeholder="연락처">
+<input id="price" placeholder="가격">
+<input type="date" id="date">
 
-const [customers,setCustomers]=useState(()=>{
-  const s=localStorage.getItem("laundry");
-  return s?JSON.parse(s):[];
-});
+<button onclick="pick('top')">상의</button>
+<button onclick="pick('bottom')">하의</button>
 
-const [form,setForm]=useState({
-  name:"",phone:"",price:"",pickupDate:"",items:[]
-});
+<div id="items"></div>
+
+<button onclick="save()">저장</button>
+<button onclick="closeForm()">취소</button>
+</div>
+
+<!-- 선택창 -->
+<div id="picker" style="display:none;background:#fff;padding:10px;"></div>
+
+<script>
+
+let customers = JSON.parse(localStorage.getItem("laundry")||"[]");
+let form = {items:[]};
+let editId = null;
+
+const TOP=["티셔츠","셔츠","패딩","코트"];
+const BOTTOM=["청바지","슬랙스","치마"];
+const STATUS=["세탁대기","세탁중","세탁완료"];
 
 /* 저장 */
-useEffect(()=>{
-  localStorage.setItem("laundry",JSON.stringify(customers));
-},[customers]);
+function saveData(){
+localStorage.setItem("laundry",JSON.stringify(customers));
+}
 
-/* 상태 */
-const changeStatus=id=>{
-  setCustomers(customers.map(c=>{
-    if(c.id!==id) return c;
-    const idx=STATUS.indexOf(c.status);
-    return {...c,status:STATUS[(idx+1)%3]};
-  }));
-};
+/* 상태색 */
+function color(s){
+if(s=="세탁대기") return "#94a3b8";
+if(s=="세탁중") return "#f59e0b";
+return "#22c55e";
+}
 
-/* 색상 */
-const color=s=>{
-  if(s==="세탁대기") return "#94a3b8";
-  if(s==="세탁중") return "#f59e0b";
-  return "#22c55e";
-};
+/* 상태 변경 */
+function changeStatus(id){
+customers=customers.map(c=>{
+if(c.id!=id) return c;
+let i=STATUS.indexOf(c.status||"세탁대기");
+return {...c,status:STATUS[(i+1)%3]};
+});
+saveData();
+render();
+}
+
+/* 품목 선택 */
+function pick(type){
+let list = type=="top"?TOP:BOTTOM;
+let html="";
+list.forEach(i=>{
+html+=`<button onclick="addItem('${type}','${i}')">${i}</button>`;
+});
+document.getElementById("picker").innerHTML=html;
+document.getElementById("picker").style.display="block";
+}
 
 /* 품목 추가 */
-const addItem=(cat,type)=>{
-  setForm(f=>{
-    const exist=f.items.find(i=>i.type===type);
-    if(exist){
-      return {
-        ...f,
-        items:f.items.map(i=>i.type===type?{...i,count:i.count+1}:i)
-      };
-    }
-    return {...f,items:[...f.items,{cat,type,count:1}]};
-  });
-  setPicker(null);
-};
+function addItem(cat,type){
+let f=form.items.find(i=>i.type==type);
+if(f) f.count++;
+else form.items.push({cat,type,count:1});
+renderItems();
+}
 
-/* 수량 변경 */
-const changeCount=(type,delta)=>{
-  setForm(f=>({
-    ...f,
-    items:f.items.map(i=>{
-      if(i.type!==type) return i;
-      const newCount=i.count+delta;
-      return newCount<=0?null:{...i,count:newCount};
-    }).filter(Boolean)
-  }));
-};
+/* 수량 */
+function count(type,d){
+form.items=form.items.map(i=>{
+if(i.type!=type) return i;
+let n=i.count+d;
+return n<=0?null:{...i,count:n};
+}).filter(Boolean);
+renderItems();
+}
+
+/* 표시 */
+function renderItems(){
+let html="";
+form.items.forEach(i=>{
+html+=`${i.type} x${i.count}
+<button onclick="count('${i.type}',1)">+</button>
+<button onclick="count('${i.type}',-1)">-</button><br>`;
+});
+document.getElementById("items").innerHTML=html;
+}
 
 /* 저장 */
-const submit=()=>{
-  if(!form.name||!form.phone) return alert("입력");
+function save(){
+let name=document.getElementById("name").value;
+let phone=document.getElementById("phone").value;
 
-  if(editingId){
-    setCustomers(customers.map(c=>c.id===editingId?{...c,...form}:c));
-  }else{
-    setCustomers([...customers,{
-      ...form,
-      id:Date.now(),
-      status:"세탁대기",
-      date:today
-    }]);
-  }
+if(!name||!phone){alert("입력");return;}
 
-  setForm({name:"",phone:"",price:"",pickupDate:"",items:[]});
-  setEditingId(null);
-  setView("list");
-};
+if(editId){
+customers=customers.map(c=>c.id==editId?{...c,name,phone,items:form.items}:c);
+}else{
+customers.push({
+id:Date.now(),
+name,phone,
+items:form.items,
+status:"세탁대기"
+});
+}
+
+saveData();
+closeForm();
+render();
+}
 
 /* 삭제 */
-const del=id=>{
-  if(!confirm("삭제?")) return;
-  setCustomers(customers.filter(c=>c.id!==id));
-};
+function del(id){
+if(!confirm("삭제?")) return;
+customers=customers.filter(c=>c.id!=id);
+saveData();
+render();
+}
 
-/* 메시지 */
-const msg=c=>`안녕하세요 ${c.name}님 😊\n세탁 완료되었습니다.`;
+/* 문자 */
+function sms(c){
+location.href=`sms:${c.phone}?body=${encodeURIComponent("세탁 완료되었습니다 "+c.name+"님")}`;
+}
 
-const sms=c=>window.location.href=`sms:${c.phone}?body=${encodeURIComponent(msg(c))}`;
-const kakao=c=>window.open(`https://share.kakao.com/?text=${encodeURIComponent(msg(c))}`);
+/* 카톡 */
+function kakao(c){
+window.open(`https://share.kakao.com/?text=${encodeURIComponent("세탁 완료 "+c.name)}`);
+}
 
-/* 입력 */
-if(view==="add"){
-return (
-<div style={page}>
-<h2>접수</h2>
+/* 수정 */
+function edit(c){
+editId=c.id;
+form={items:c.items||[]};
+document.getElementById("name").value=c.name;
+document.getElementById("phone").value=c.phone;
+openForm();
+renderItems();
+}
 
-<input placeholder="이름" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} style={input}/>
-<input placeholder="연락처" value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} style={input}/>
-<input placeholder="가격" value={form.price} onChange={e=>setForm({...form,price:e.target.value})} style={input}/>
-<input type="date" value={form.pickupDate} onChange={e=>setForm({...form,pickupDate:e.target.value})} style={input}/>
-
-<button onClick={()=>setPicker("top")} style={btnGray}>상의</button>
-<button onClick={()=>setPicker("bottom")} style={btnGray}>하의</button>
-<button onClick={()=>setPicker("etc")} style={btnGray}>기타</button>
-
-{/* 선택된 항목 */}
-<div>
-{form.items.map((i,idx)=>(
-<div key={idx} style={{margin:5}}>
-{i.type} x {i.count}
-<button onClick={()=>changeCount(i.type,1)}>+</button>
-<button onClick={()=>changeCount(i.type,-1)}>-</button>
-</div>
-))}
-</div>
-
-<button onClick={submit} style={btn}>저장</button>
-<button onClick={()=>setView("list")} style={btnGray}>취소</button>
-
-{/* 선택창 */}
-{picker && (
-<div style={modal}>
-{(picker==="top"?TOP:picker==="bottom"?BOTTOM:ETC).map(i=>(
-<button key={i} onClick={()=>addItem(picker,i)} style={btnSmall}>{i}</button>
-))}
-</div>
-)}
-
-</div>
-);
+/* 폼 */
+function openForm(){
+document.getElementById("formBox").style.display="block";
+}
+function closeForm(){
+document.getElementById("formBox").style.display="none";
+form={items:[]};
+editId=null;
 }
 
 /* 리스트 */
-const list=customers.filter(c=>c.name.includes(search)||c.phone.includes(search));
+function render(){
+let s=document.getElementById("search").value;
+let html="";
 
-return (
-<div style={page}>
-<h1>🧺 세탁소</h1>
+customers.filter(c=>c.name.includes(s)||c.phone.includes(s))
+.forEach(c=>{
+html+=`
+<div class="card">
 
-<input placeholder="검색" value={search} onChange={e=>setSearch(e.target.value)} style={input}/>
-<button onClick={()=>setView("add")} style={btn}>+ 접수</button>
-
-{list.map(c=>(
-<div key={c.id} style={card}>
-<b>{c.name}</b><br/>
-{c.phone}<br/>
-{c.items.map(i=>`${i.type} x${i.count}`).join(",")}<br/>
-
-<button onClick={()=>changeStatus(c.id)} style={{...btnSmall,background:color(c.status),color:"#fff"}}>
-{c.status}
-</button>
-
-<button onClick={()=>sms(c)} style={btnSmall}>📩</button>
-<button onClick={()=>kakao(c)} style={btnSmall}>💬</button>
-<button onClick={()=>del(c.id)} style={btnSmall}>🗑</button>
-
+<div class="status" style="background:${color(c.status)}"
+onclick="changeStatus(${c.id})">
+${c.status} (클릭)
 </div>
-))}
 
-</div>
-);
+<b>${c.name}</b><br>
+${c.phone}<br>
+${(c.items||[]).map(i=>i.type+" x"+i.count).join(",")}<br>
+
+<button onclick='sms(${JSON.stringify(c)})'>📩</button>
+<button onclick='kakao(${JSON.stringify(c)})'>💬</button>
+<button onclick='edit(${JSON.stringify(c)})'>✏️</button>
+<button onclick='del(${c.id})'>🗑</button>
+
+</div>`;
+});
+
+document.getElementById("list").innerHTML=html;
 }
 
-const page={padding:20,maxWidth:480,margin:"auto"};
-const input={width:"100%",padding:10,margin:"5px 0"};
-const btn={width:"100%",padding:12,marginTop:10,background:"#3b82f6",color:"#fff"};
-const btnGray={...btn,background:"#94a3b8"};
-const btnSmall={margin:3,padding:6};
-const card={background:"#fff",padding:10,marginTop:10};
-const modal={position:"fixed",bottom:0,left:0,right:0,background:"#fff",padding:10};
-
-ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+render();
 
 </script>
+
 </body>
 </html>
