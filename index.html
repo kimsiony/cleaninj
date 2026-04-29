@@ -3,151 +3,219 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CleanThings</title>
+<title>은현이네 세탁소</title>
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600&display=swap" rel="stylesheet">
 
 <style>
 body {
   margin: 0;
-  font-family: 'Inter', sans-serif;
-  background: #0f172a;
-  color: #e2e8f0;
+  font-family: 'Pretendard', sans-serif;
+  background: #f5f6f8;
 }
 
-.container {
-  max-width: 1100px;
-  margin: auto;
-  padding: 24px;
+/* 상단 */
+.header {
+  background: linear-gradient(135deg, #1d4ed8, #2563eb);
+  color: white;
+  padding: 30px 20px;
+  text-align: center;
+  border-bottom-left-radius: 30px;
+  border-bottom-right-radius: 30px;
 }
 
-h1 {
-  font-size: 32px;
-  margin-bottom: 8px;
+.header h1 {
+  margin: 0;
+  font-size: 24px;
 }
 
-.subtitle {
-  color: #94a3b8;
-  margin-bottom: 20px;
+.header p {
+  margin: 5px 0 0;
+  opacity: 0.9;
 }
 
-/* 필터 버튼 */
-.filters {
-  margin-bottom: 20px;
+/* 홈 버튼 */
+.menu {
+  padding: 20px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
 }
 
-button {
-  background: #1e293b;
-  color: #e2e8f0;
-  border: 1px solid #334155;
-  padding: 8px 14px;
-  border-radius: 10px;
-  margin-right: 8px;
+.card {
+  padding: 20px;
+  border-radius: 16px;
+  color: white;
+  font-weight: bold;
+  text-align: center;
   cursor: pointer;
 }
 
-button:hover {
-  background: #334155;
-}
+.blue { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+.green { background: linear-gradient(135deg, #10b981, #059669); }
 
-/* 카드 */
-ul {
-  list-style: none;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 20px;
-}
-
-li {
-  background: #1e293b;
+/* 화면 */
+.screen {
+  display: none;
   padding: 16px;
-  border-radius: 16px;
-  border: 1px solid #334155;
-  transition: 0.2s;
 }
 
-li:hover {
-  transform: translateY(-6px);
-  border-color: #475569;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+/* 입력폼 */
+input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  margin-bottom: 10px;
 }
 
-.badge {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 999px;
+/* 버튼 */
+.btn {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  background: #2563eb;
+  color: white;
+  font-size: 16px;
+}
+
+/* 리스트 */
+.item {
+  background: white;
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.price {
+  float: right;
+  color: #2563eb;
+  font-weight: bold;
+}
+
+.small {
+  color: #666;
+  font-size: 13px;
+}
+
+/* 하단 네비 */
+.nav {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  background: white;
+  display: flex;
+  justify-content: space-around;
+  padding: 10px 0;
+  border-top: 1px solid #eee;
+}
+
+.nav div {
   font-size: 12px;
-  margin-top: 8px;
+  text-align: center;
+  color: #666;
 }
 
-.clean { background: #22c55e; color: white; }
-.suspicious { background: #eab308; color: black; }
-.infected { background: #ef4444; color: white; }
-
-p {
-  color: #cbd5f5;
-  font-size: 14px;
+.nav div.active {
+  color: #2563eb;
+  font-weight: bold;
 }
 </style>
 </head>
 
 <body>
 
-<div class="container">
-  <h1>🛡️ CleanThings</h1>
-  <p class="subtitle">Secure IoT Device Directory</p>
-
-  <!-- 필터 -->
-  <div class="filters">
-    <button onclick="filterItems('all')">All</button>
-    <button onclick="filterItems('clean')">Clean</button>
-    <button onclick="filterItems('suspicious')">Suspicious</button>
-    <button onclick="filterItems('infected')">Infected</button>
+<!-- 홈 -->
+<div id="home">
+  <div class="header">
+    <h1>은현이네 세탁소</h1>
+    <p>30년 전통, 믿고 맡겨주세요</p>
   </div>
 
-  <!-- 리스트 -->
-  <ul id="deviceList">
+  <div class="menu">
+    <div class="card blue" onclick="go('register')">고객 접수</div>
+    <div class="card green" onclick="go('list')">세탁 진행중</div>
+    <div class="card blue">완료 고객</div>
+    <div class="card green">매출 보기</div>
+  </div>
+</div>
 
-    <li data-type="clean">
-      <strong>Samsung SmartThings</strong><br>
-      <span class="badge clean">Clean</span>
-      <p>Trusted smart home ecosystem</p>
-    </li>
+<!-- 고객 등록 -->
+<div id="register" class="screen">
+  <h3>고객 접수</h3>
+  <input id="name" placeholder="이름">
+  <input id="phone" placeholder="전화번호">
+  <input id="price" placeholder="가격">
+  <button class="btn" onclick="add()">접수하기</button>
+</div>
 
-    <li data-type="clean">
-      <strong>LG ThinQ</strong><br>
-      <span class="badge clean">Clean</span>
-      <p>Secure appliance ecosystem</p>
-    </li>
+<!-- 리스트 -->
+<div id="list" class="screen">
+  <h3>세탁 진행중</h3>
+  <div id="items"></div>
+</div>
 
-    <li data-type="suspicious">
-      <strong>Unknown IoT Camera</strong><br>
-      <span class="badge suspicious">Suspicious</span>
-      <p>Unverified manufacturer</p>
-    </li>
-
-    <li data-type="infected">
-      <strong>Generic Smart Plug</strong><br>
-      <span class="badge infected">Infected</span>
-      <p>Potential data security risk</p>
-    </li>
-
-  </ul>
+<!-- 하단 네비 -->
+<div class="nav">
+  <div class="active" onclick="go('home')">홈</div>
+  <div onclick="go('list')">고객</div>
+  <div>알림</div>
+  <div>설정</div>
 </div>
 
 <script>
-function filterItems(type) {
-  const items = document.querySelectorAll("#deviceList li");
+let data = JSON.parse(localStorage.getItem("data") || "[]");
 
-  items.forEach(item => {
-    if (type === "all") {
-      item.style.display = "block";
-    } else {
-      item.style.display = item.dataset.type === type ? "block" : "none";
-    }
+function go(screen) {
+  document.getElementById("home").style.display = "none";
+  document.getElementById("register").style.display = "none";
+  document.getElementById("list").style.display = "none";
+
+  if(screen === "home") document.getElementById("home").style.display = "block";
+  if(screen === "register") document.getElementById("register").style.display = "block";
+  if(screen === "list") {
+    render();
+    document.getElementById("list").style.display = "block";
+  }
+}
+
+function add() {
+  const name = document.getElementById("name").value;
+  const phone = document.getElementById("phone").value;
+  const price = document.getElementById("price").value;
+
+  data.push({ name, phone, price, done:false });
+  localStorage.setItem("data", JSON.stringify(data));
+
+  alert("접수 완료");
+  go("home");
+}
+
+function render() {
+  const el = document.getElementById("items");
+  el.innerHTML = "";
+
+  data.forEach((d,i)=>{
+    el.innerHTML += `
+      <div class="item">
+        <strong>${d.name}</strong>
+        <span class="price">${d.price}원</span><br>
+        <div class="small">${d.phone}</div>
+        <button onclick="toggle(${i})">완료 처리</button>
+      </div>
+    `;
   });
 }
+
+function toggle(i){
+  data[i].done = !data[i].done;
+  localStorage.setItem("data", JSON.stringify(data));
+  render();
+}
+
+go("home");
 </script>
 
 </body>
